@@ -164,8 +164,8 @@ The paper is under review at IEEE TCSVT.
   
 ## Acknowledgement
 Related Repositories:
--  [DensePose](https://github.com/facebookresearch/DensePose). 
--  [Detectron2](https://github.com/facebookresearch/detectron2). 
+-  [DensePose](https://github.com/facebookresearch/DensePose)
+-  [Detectron2](https://github.com/facebookresearch/detectron2)
 
 
 
