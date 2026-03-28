@@ -4,7 +4,7 @@
 
 ![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg) ![Linux](https://img.shields.io/badge/OS-Linux-FCC624?logo=linux&logoColor=black) ![Windows](https://img.shields.io/badge/OS-Windows-0078D6?logo=windows&logoColor=white) ![Under Review](https://img.shields.io/badge/Status-Under%20Review-yellow)
 
-This repository contains the training data for a dense correspondence embedding predictor. In this codebase, we employ datasets with **ground truth annotations**, such as DensePose-COCO, and present an alternative approach for training dense correspondence embeddings based on ground truth 2D-3D annotations. You may train this predictor using either the implementation provided in this repository, or the one from the codebase of **Structured Distilled 3D Gait Fields (SD-3DGF)**.
+This repository contains the training data for a dense correspondence embedding predictor. In this codebase, we employ datasets with **ground truth annotations**, such as DensePose-COCO, and present an alternative approach for training dense correspondence embeddings based on ground truth 2D-3D annotations. You may train this predictor using either the implementation provided in this repository, or the one from the codebase of **Structured Distilled 3D Gait Fields (SD-3DGF)**:https://github.com/yubinwang2021/SD-3DGF.
 
 <p align="center">
   <img src="figs/embed_True.png" alt="image-20260328163202037">
@@ -43,8 +43,8 @@ and `minival2014` is used for validation.
 <!-- START TABLE -->
 <!-- TABLE HEADER -->
 <th valign="bottom">Name</th>
-<th valign="bottom"># inst</th>
-<th valign="bottom"># images</th>
+<th valign="bottom">inst</th>
+<th valign="bottom">images</th>
 <th valign="bottom">file size</th>
 <th valign="bottom">download</th>
 <!-- TABLE BODY -->
@@ -85,11 +85,14 @@ and `minival2014` is used for validation.
 (5) UV_Processed.mat: [this link](https://drive.google.com/file/d/1U6N8tb14RmZNNzjsEvMFHdWphpMqy_h_/view?usp=sharing)
 
 For Visualization Code (Not required during the training stage):  
-You may also need to download the officially provided SMPL model files at: https://smpl.is.tue.mpg.de/ such as:
+You may need to download the officially provided SMPL model files at: https://smpl.is.tue.mpg.de/ such as:
 
 smpl_mean_params.npz or smpl_mean_params.h5
+
 J_regressor_h36m.npy
+
 J_regressor_extra.npy
+
 basicModel_neutral_lbs_10_207_0_v1.0.0.pkl
 
 Unfortunately, we do not have the permission to directly share these official files above. Therefore, you must download the SMPL model from the official website.
@@ -116,7 +119,7 @@ First, create a virtual environment for the repository
 ```bash
 conda create -n dcepredictor python=3.10
 ```
-then activate the environment 
+Second, activate the environment 
 ```bash
 conda activate dcepredictor
 ```
@@ -142,7 +145,7 @@ python -m evaluater.dce_evaluater
 
 ## 5. Visualization
 
-(1) During training, the visualization results of the dense correspondence embedding will be saved to embed_True.png. Two visualization methods are available: PCA dimensionality reduction and extracting the first three dimensions of the embedding for visualization (embed[:, :, :3]). You can modify them in the corresponding code section as needed.
+(1) During training, the visualization results of the dense correspondence embedding will be auto-saved to **embed_True.png**. Two visualization methods are available: PCA dimensionality reduction and extracting the first three dimensions of the embedding for visualization (embed[:, :, :3]). You can modify them in the corresponding code section as needed.
 
 (2) For 3D visualization code, run:
 ```bash
