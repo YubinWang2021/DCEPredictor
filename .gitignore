@@ -7,5 +7,4 @@ dist/
 build/
 *.egg-info/
 *.pth
-*.png
 *.npy
