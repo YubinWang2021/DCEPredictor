@@ -6,7 +6,7 @@
 
 This repository contains the training data for a dense correspondence embedding predictor. In this codebase, we employ datasets with **ground truth annotations**, such as DensePose-COCO, and present an alternative approach for training dense correspondence embeddings based on ground truth 2D-3D annotations. You may train this predictor using either the implementation provided in this repository, or the one from the codebase of **Structured Distilled 3D Gait Fields (SD-3DGF)**.
 
-![image-20260328163202037](figs/embed_True.png)
+![image-20260328163202037](figs/embed_True.png){: .center }
 
 ## 1. News
 
@@ -29,104 +29,94 @@ This repository contains the training data for a dense correspondence embedding 
 ```bash
 git clone https://github.com/YubinWang2021/DCEPredictor
 ```
-#### 2.1 Download the DensePose-COCO 2014 datasets 
+#### 2.1 Download the DensePose-COCO datasets 
+Download raw images of COCO 2014: [this link](https://cocodataset.org/#download)
 
-![image-20260328163202037](figs/Fig3.png)
+Download the ground-truth dense 2D-3D annotations: the dataset splits used in the training schedules are
+`train2014`, `valminusminival2014` and `minival2014`.
+`train2014` and `valminusminival2014` are used for training,
+and `minival2014` is used for validation.
 
-Create a folder named `data`  and a folder named `checkpoint` inside the repository, 
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="bottom">Name</th>
+<th valign="bottom"># inst</th>
+<th valign="bottom"># images</th>
+<th valign="bottom">file size</th>
+<th valign="bottom">download</th>
+<!-- TABLE BODY -->
+<!-- ROW: densepose_train2014 -->
+<tr><td align="left">densepose_train2014</td>
+<td align="center">39210</td>
+<td align="center">26437</td>
+<td valign="center">526M</td>
+<td align="left"><a href="https://dl.fbaipublicfiles.com/densepose/annotations/coco/densepose_train2014.json">densepose_train2014.json</a></td>
+</tr>
+<!-- ROW: densepose_valminusminival2014 -->
+<tr><td align="left">densepose_valminusminival2014</td>
+<td align="center">7297</td>
+<td align="center">5984</td>
+<td valign="center">105M</td>
+<td align="left"><a href="https://dl.fbaipublicfiles.com/densepose/annotations/coco/densepose_valminusminival2014.json">densepose_valminusminival2014.json</a></td>
+</tr>
+<!-- ROW: densepose_minival2014 -->
+<tr><td align="left">densepose_minival2014</td>
+<td align="center">2243</td>
+<td align="center">1508</td>
+<td valign="center">31M</td>
+<td align="left"><a href="https://dl.fbaipublicfiles.com/densepose/annotations/coco/densepose_minival2014.json">densepose_minival2014.json</a></td>
+</tr>
+</tbody></table>
 
-**2.1.1 For the raw dataset:** 
 
-(1) [recommended] You can use our processed data for VCCRe-ID datasets 
+#### 2.2 Download files related to the SMPL model surface Modeling.
 
-(2) [Alternative] You can process it by yourself by running the following command line (**Note**: replace the path to the folder storing the datasets and the dataset name).
+(1) Geodists_smpl_27554.pkl: [this link](https://drive.google.com/file/d/1RYha1f6jaT0hC1Gkm4tbmLbi86aSEDva/view?usp=sharing)
 
-```bash
-python datasets/prepare.py --root "your VCCRe-ID Dataset Root" --dataset_name vccr
-```
-This will generate train.pkl, query.pkl, and gallery.pkl in [dataset_name]. 
+(2) Pdist_matrix.mat: [this link](https://drive.google.com/file/d/11mM4lBXGXoJnfM1U8ZZEc-sDw_b1w3Ul/view?usp=sharing)
 
-**2.1.2 For the dense 2D-3D paired data:** 
+(3) SMPL_subdiv.mat: [this link](https://drive.google.com/file/d/1fdNBrvK157GIIwKMdqIllSRvUOcU_goz/view?usp=sharing)
 
-(1) [recommended] You can use our processed data for VCCRe-ID datasets.
+(4) SMPL_SUBDIV_TRANSFORM.mat: [this link](https://drive.google.com/file/d/1Vjrd_NFytBGTlyacnms9jR4QIlA19QwY/view?usp=sharing)
 
-(2) [Alternative] You can use our data generation pipeline to generate dense 2D-3D paired data for your customized data.
+(5) UV_Processed.mat: [this link](https://drive.google.com/file/d/1U6N8tb14RmZNNzjsEvMFHdWphpMqy_h_/view?usp=sharing)
 
-Pytorch Implementation: https://github.com/YubinWang2021/Dense-Paired-Data-Generation 
+For Visualization Code (Not required during the training stage):  
+You may also need to download the officially provided SMPL model files at: https://smpl.is.tue.mpg.de/ such as:
 
-#### 2.2 Download our pretrained clothes classifier.
-| Dataset | Pre-Trained Clothes Classifier|
-|:----------:|:----------:|
-| CCV-S | [link](https://drive.google.com/file/d/1eXgXnTofXnutDnbCpHszTnJceLwJMZzc/view?usp=sharing) |
-| CCV-R | [link](https://drive.google.com/file/d/1Ak5V_u6YmEjjq1wblpttYXEYmVcvB3Wq/view?usp=sharing) |
-| CCVID | [link](https://drive.google.com/file/d/1F25i-KjBz3qOIWSFpJQ344UyzQs8pFTL/view?usp=sharing) |
-| VCCR | [link](https://drive.google.com/file/d/1klPyXXUjF8VsnUrOCv-ncSS8c1HYmQlU/view?usp=sharing) |
+smpl_mean_params.npz or smpl_mean_params.h5
+J_regressor_h36m.npy
+J_regressor_extra.npy
+basicModel_neutral_lbs_10_207_0_v1.0.0.pkl
 
-#### 2.3 Download our pretrained 3D vertex embeddings.
+Unfortunately, we do not have the permission to directly share these official files above. Therefore, you must download the SMPL model from the official website.
 
-![image-20260328163202037](figs/Fig2.png)
-
-Download the pretrained 3D vertex embeddings at  [this link](https://drive.google.com/file/d/1SSYH3zO-ax-aKRHLoaGRsxBQXjXvwAb4/view?usp=sharing).
-#### 2.4  Download our pretrained dense embedding correspondence predictor checkpoint or train your own  dense correspondence embedding predictor.
-(1) Download our pretrained checkpoint: [this link](https://drive.google.com/file/d/1CbE1WelNSUnP7VCBofmGcHBgbczyruBw/view?usp=sharing). 
-
-(2) For your own customized data, you can refer to our pytorch implementation: https://github.com/YubinWang2021/DCEPredictor  
-
-#### 2.5 Please extract the compressed pretrained data package and organize it according to the directory structure provided below.
-**(1) Data Folder:**
-
+#### 2.3 Please prepare the dataset according to the following format (for training).
 ```text
-Data/
-├── VCCR/                  # VCCR dataset
-│   ├── dense_corr/        # Dense 2D-3D correspondence
-│   ├── mask/              # Segmentation masks
-│   ├── train.pkl           # Training split
-│   ├── query.pkl           # Query split
-│   └── gallery.pkl         # Gallery split
-├── CCVID/                 # CCVID dataset
-│   ├── dense_corr/
-│   ├── mask/
-│   ├── train.pkl
-│   ├── query.pkl
-│   └── gallery.pkl
-├── CCV-R/                 # CCV-R dataset
-│   ├── dense_corr/
-│   ├── mask/
-│   ├── train.pkl
-│   ├── query.pkl
-│   └── gallery.pkl
-└── CCV-S/                 # CCV-S dataset
-    ├── dense_corr/
-    ├── mask/
-    ├── train.pkl
-    ├── query.pkl
-    └── gallery.pkl
+data/
+├── annotations/
+├── densepose_coco_2014_minival.json
+├── densepose_coco_2014_train.json
+├── densepose_coco_2014_valminusminival.json
+├── geodists_smpl_27554.pkl
+├── Pdist_matrix.mat
+├── SMPL_subdiv.mat
+├── SMPL_SUBDIV_TRANSFORM.mat
+├── UV_Processed.mat
+├── train2014/
+└── val2014/
 ```
 
-**(2) Checkpoint Folder:**
-
-```text
-checkpoint/
-├── vccr_clothes_classifier.pth
-├── ccvid_clothes_classifier.pth
-├── ccvr_clothes_classifier.pth
-├── ccvs_clothes_classifier.pth
-└── dce_pretrained.pth
-```
-
-## 2. Running instructions
-
-### Getting started
-
-#### Create virtual environment
+## 3. Environment Setup and Dependency Installation
 
 First, create a virtual environment for the repository
 ```bash
-conda create -n sd3dgf python=3.10
+conda create -n dcepredictor python=3.10
 ```
 then activate the environment 
 ```bash
-conda activate sd3dgf
+conda activate dcepredictor
 ```
 Next, install the package by running
 ```bash
@@ -137,54 +127,29 @@ Then, install the dependencies
 pip install -r requirements.txt
 ```
 
-## 3. Configuration Options
+## 4. Training and Testing Scripts
 
-Go to `./config.py` to modify configurations accordingly
-- Dataset name
-- Number of epochs
-- Batch size
-- Learning rate
-- backbone (according to model names above)
-- Choice of loss functions
-- Hyper-parameters
-
-If training from checkpoint, copy checkpoint path and paste to RESUME in `./config.py`.
-
-## 4. Run Training/Testing Scripts
-
-Create a folder named `work_space` inside the repository, then create two subfolders named `save` and `output`.
-
-```
-data
-work_space
-|--- save
-|--- output
-main.sh
-```
-#### Run
-
+For training, please run:
 ```bash
-bash main.sh
+python -m trainer.dce_trainer
 ```
-
-or
-
+For test, please run:
 ```bash
-python train.py
-python test.py
+python -m evaluater.dce_evaluater
 ```
-
-Trained model will be automatically saved to `work_space/save`.
-Testing results will be automatically saved to `work_space/output`.
 
 ## 5. Visualization
 
-![image-20260328163202037](figs/Fig4.png)
+(1) During training, the visualization results of the dense correspondence embedding will be saved to embed_True.png. Two visualization methods are available: PCA dimensionality reduction and extracting the first three dimensions of the embedding for visualization (embed[:, :, :3]). You can modify them in the corresponding code section as needed.
 
-For 3D visualization related code, please refer to the visualization code in our dedicated repository:  
-https://github.com/YubinWang2021/DCEPredictor  
+(2) For 3D visualization code, run:
+```bash
+python visualize_dce_3D.py
+```
 
-We will organize and release the full 3D visualization toolkit as a standalone repository here in subsequent updates.
+Please download some official SMPL model data and the files required for loading the SMPL model from the official website: https://smpl.is.tue.mpg.de/, and put them in the data folder.
+
+** If this work is published, we will organize the dense correspondence embedding visualization and different kinds of 3D visualizations and release them in a separate repository at https://github.com/YubinWang2021/Demo-3D-Vis-Code **
 
 ## Citation
 

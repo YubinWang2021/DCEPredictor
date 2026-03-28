@@ -98,8 +98,8 @@ class SMPL(nn.Module):
 
         J_regressor_extra = torch.from_numpy(np.load('/data/dce3d/J_regressor_extra.npy')).float()
         #semantic_prior = np.load('/data/dce3d/semantic_prior.npy', mmap_mode='r')
-        # self.prior_best_match = np.argmax(semantic_prior, axis=1)
-        self.prior_best_match = np.load('/data/dce3d/prior_best_match.npy', mmap_mode='r')
+        # self.prior_match = np.argmax(semantic_prior, axis=1)
+        #self.prior_best_match = np.load('/data/dce3d/prior_match.npy', mmap_mode='r')
         self.register_buffer('J_regressor_extra', J_regressor_extra)
         self.joints_idx = [8, 5, 29, 30, 4, 7, 21, 19, 17, 16, 18, 20, 31, 32, 33, 34, 35, 36, 37, 24, 26, 25, 28, 27]
 
@@ -193,7 +193,6 @@ class SMPL(nn.Module):
         self.show_skeleton(joints.T.numpy())
 
         print(v.shape)
-        np.save('/data/dce3d/v_0101_0105.npy', v)
         return v
 
 
@@ -305,7 +304,6 @@ v = smpl(torch.Tensor(pose_3), torch.Tensor(beta_3))
 
 
 vertex_colors = np.load('vert_colors_3D.npy')
-
 vertex_colors = vertex_colors[0:6890].round().astype(np.uint8)
 
 fig = plt.figure()
@@ -381,6 +379,5 @@ scene.add(pyrender.PerspectiveCamera(yfov=np.pi / 3.0, aspectRatio=4 / 3.0), pos
 
 
 viewer = pyrender.Viewer(scene, use_raymond_lighting=True, viewport_size=(800, 600))
-
 
 
