@@ -164,9 +164,8 @@ The paper is under review at IEEE TCSVT.
   
 ## Acknowledgement
 Related Repositories:
--  [CAL](https://github.com/guxinqian/Simple-CCReID). 
--  [VCCReID-Baseline](https://github.com/dustin-nguyen-qil/VCCReID-Baseline). 
-
+-  [DensePose](https://github.com/facebookresearch/DensePose). 
+-  [Detectron2](https://github.com/facebookresearch/detectron2). 
 
 
 
