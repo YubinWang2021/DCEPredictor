@@ -1,4 +1,4 @@
-# A Codebase for Training Dense Correspondence Embedding Predictor
+# Correspondence Embedding Predictor Using Dense 2D-3D Data
 
 <span style="font-size:20px;">[Under Review at IEEE TCSVT]</span>
 
@@ -6,7 +6,9 @@
 
 This repository contains the training data for a dense correspondence embedding predictor. In this codebase, we employ datasets with **ground truth annotations**, such as DensePose-COCO, and present an alternative approach for training dense correspondence embeddings based on ground truth 2D-3D annotations. You may train this predictor using either the implementation provided in this repository, or the one from the codebase of **Structured Distilled 3D Gait Fields (SD-3DGF)**.
 
-![image-20260328163202037](figs/embed_True.png){: .center }
+<p align="center">
+  <img src="figs/embed_True.png" alt="image-20260328163202037">
+</p>
 
 ## 1. News
 
