@@ -145,16 +145,16 @@ python -m evaluater.dce_evaluater
 
 ## 5. Visualization
 
-(1) During training, the visualization results of the dense correspondence embedding will be auto-saved to **embed_True.png**. Two visualization methods are available: PCA dimensionality reduction and extracting the first three dimensions of the embedding for visualization (embed[:, :, :3]). You can modify them in the corresponding code section as needed.
+(1) During training, the visualization results of the dense correspondence embedding will be auto-saved to **embed_True.png**. Two visualization methods are available: **PCA dimensionality reduction** and **extracting the first three dimensions of the embedding for visualization (embed[:, :, :3])**. You can modify them in the corresponding code section as needed.
 
 (2) For 3D visualization code, run:
 ```bash
 python visualize_dce_3D.py
 ```
 
-Please download some official SMPL model data and the files required for loading the SMPL model from the official website: https://smpl.is.tue.mpg.de/, and put them in the data folder.
+Please download the official SMPL model data and the files required for loading the SMPL model from the official website: https://smpl.is.tue.mpg.de/, and put them in the data folder.
 
-** If this work is published, we will organize the dense correspondence embedding visualization and different kinds of 3D visualizations and release them in a separate repository at https://github.com/YubinWang2021/Demo-3D-Vis-Code **
+If this work is published, we will organize the dense correspondence embedding visualization and different kinds of 3D visualizations and release them in a separate repository at: https://github.com/YubinWang2021/Demo-3D-Vis-Code
 
 ## Citation
 
