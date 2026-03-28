@@ -1,6 +1,6 @@
 # Correspondence Embedding Predictor Using Dense 2D-3D Data
 
-<span style="font-size:20px;">[Under Review at IEEE TCSVT]</span>
+ Related to SD-3DGF (Structured Distilled 3D Gait Fields for Clothes-Changing Person Re-Identification in Videos) <span style="font-size:20px;">[Under Review at IEEE TCSVT]</span>
 
 ![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg) ![Linux](https://img.shields.io/badge/OS-Linux-FCC624?logo=linux&logoColor=black) ![Windows](https://img.shields.io/badge/OS-Windows-0078D6?logo=windows&logoColor=white) ![Under Review](https://img.shields.io/badge/Status-Under%20Review-yellow)
 
