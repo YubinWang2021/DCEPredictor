@@ -7,14 +7,14 @@ opencv_contrib_python_headless==4.7.0.72
 opencv_python==4.8.0.76
 opencv_python_headless==4.2.0.34
 opendr==0.78
-Pillow==8.2.0
-Pillow==10.0.0
+#Pillow==8.2.0
+#Pillow==10.0.0
 Pillow==12.1.1
 progress==1.6
 pycocotools==2.0.7
 pyrender==0.1.45
 scikit_learn==1.3.0
-scipy==1.17.1
+scipy==1.15.3
 setuptools==68.0.0
 thop==0.1.1.post2209072238
 timm==0.9.5

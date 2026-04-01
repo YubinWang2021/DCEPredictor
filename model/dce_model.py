@@ -4,8 +4,189 @@ import torch.nn as nn
 import torch.nn.functional as F
 from timm.models.registry import register_model
 from loss.dce_loss import DenseCorrepondenceEmbeddingLoss
-import thop
-from thop import profile
+import open_clip
+
+class DINOv2VisualWrapper(nn.Module):
+    def __init__(self, dinov2_model):
+        super().__init__()
+        self.dinov2 = dinov2_model
+        self.patch_size = 14  
+    def forward(self, x):
+        B, C, H, W = x.shape
+        new_h = ((H + self.patch_size - 1) // self.patch_size) * self.patch_size
+        new_w = ((W + self.patch_size - 1) // self.patch_size) * self.patch_size
+        if H != new_h or W != new_w:
+            x = F.interpolate(x, size=(new_h, new_w), mode='bilinear', align_corners=False)
+
+        with torch.no_grad():
+            out = self.dinov2.forward_features(x)
+        patch_tokens = out['x_norm_patchtokens']  
+
+        hp = new_h // self.patch_size
+        wp = new_w // self.patch_size
+        feat = patch_tokens.permute(0, 2, 1).reshape(B, -1, hp, wp)
+        return feat
+
+class CLIPVisualWrapper(nn.Module):
+    def __init__(self, clip_visual):
+        super().__init__()
+        self.visual = clip_visual
+        self.patch_size = clip_visual.patch_size[0]  
+
+    def forward(self, x):
+        B, C, H, W = x.shape
+        hp = H // self.patch_size
+        wp = W // self.patch_size
+
+        x = self.visual.conv1(x)
+        x = x.reshape(B, x.shape[1], -1).permute(0, 2, 1)
+
+        cls = self.visual.class_embedding.unsqueeze(0).repeat(B, 1, 1)
+        x = torch.cat([cls, x], dim=1)
+
+        pos = self.visual.positional_embedding.unsqueeze(0)
+        cls_pos = pos[:, :1]
+        pat_pos = pos[:, 1:]
+        orig_s = int(pat_pos.shape[1] ** 0.5)
+        pat_pos = pat_pos.reshape(1, orig_s, orig_s, -1).permute(0, 3, 1, 2)
+        pat_pos = F.interpolate(pat_pos, size=(hp, wp), mode='bilinear', align_corners=False)
+        pat_pos = pat_pos.permute(0, 2, 3, 1).reshape(1, hp*wp, -1)
+        pos = torch.cat([cls_pos, pat_pos], dim=1)
+
+        x = x + pos
+        x = self.visual.ln_pre(x)
+        x = x.permute(1, 0, 2)
+        x = self.visual.transformer(x)
+        x = x.permute(1, 0, 2)
+
+        feat = x[:, 1:].permute(0, 2, 1).reshape(B, -1, hp, wp)
+        return feat
+
+
+class DINOv2Backbone(nn.Module):
+    def __init__(self, out_dim=256, target_size=(32, 16)):
+        super().__init__()
+        self.dinov2 = torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14', pretrained=True)
+        for p in self.dinov2.parameters():
+            p.requires_grad = False
+        
+        self.wrapper = DINOv2VisualWrapper(self.dinov2)
+        self.target_size = target_size
+
+        self.adapter = nn.Sequential(
+            nn.Conv2d(384, out_dim, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x):
+        x = self.wrapper(x)
+        x = F.interpolate(x, size=self.target_size, mode='bilinear', align_corners=True)
+        x = self.adapter(x)
+        return x
+    
+class CLIPVisualWrapper(nn.Module):
+    def __init__(self, clip_visual):
+        super().__init__()
+        self.visual = clip_visual
+        if hasattr(clip_visual, 'patch_size'):
+            self.patch_size = clip_visual.patch_size if isinstance(clip_visual.patch_size, int) else clip_visual.patch_size[0]
+        elif hasattr(clip_visual, 'conv1'):
+            self.patch_size = clip_visual.conv1.kernel_size[0]
+        else:
+            self.patch_size = 32
+
+    def forward(self, x):
+        B, C, H, W = x.shape
+        hp = H // self.patch_size
+        wp = W // self.patch_size
+
+        if hasattr(self.visual, 'conv1'):
+            x = self.visual.conv1(x)  # [B, C, H/P, W/P]
+        elif hasattr(self.visual, 'patch_embed'):
+            x = self.visual.patch_embed(x)
+            hp, wp = x.shape[2], x.shape[3]
+        else:
+            raise ValueError("OpenCLIP model has no conv1 or patch_embed")
+
+        x = x.flatten(2).transpose(1, 2)  # [B, N, C]
+
+        cls_token = None
+        if hasattr(self.visual, 'class_embedding'):
+            cls_token = self.visual.class_embedding.unsqueeze(0).repeat(B, 1, 1)
+        elif hasattr(self.visual, 'cls_token'):
+            cls_token = self.visual.cls_token.repeat(B, 1, 1)
+        
+        if cls_token is not None:
+            x = torch.cat([cls_token, x], dim=1)  # [B, N+1, C]
+
+        pos_emb = None
+        if hasattr(self.visual, 'positional_embedding'):
+            pos_emb = self.visual.positional_embedding.unsqueeze(0)
+        elif hasattr(self.visual, 'pos_embed'):
+            pos_emb = self.visual.pos_embed
+
+        if pos_emb is not None and cls_token is not None:
+            cls_pos = pos_emb[:, :1, :]
+            patch_pos = pos_emb[:, 1:, :]
+            
+            orig_n = patch_pos.shape[1]
+            orig_s = int(orig_n ** 0.5)
+            patch_pos = patch_pos.reshape(1, orig_s, orig_s, -1).permute(0, 3, 1, 2)
+            patch_pos = F.interpolate(patch_pos, size=(hp, wp), mode='bilinear', align_corners=False)
+            patch_pos = patch_pos.permute(0, 2, 3, 1).flatten(1, 2)
+            
+            new_pos = torch.cat([cls_pos, patch_pos], dim=1)
+            x = x + new_pos
+
+        if hasattr(self.visual, 'ln_pre'):
+            x = self.visual.ln_pre(x)
+        
+        if hasattr(self.visual, 'transformer'):
+            x = x.permute(1, 0, 2)  # [N+1, B, C]
+            x = self.visual.transformer(x)
+            x = x.permute(1, 0, 2)  # [B, N+1, C]
+        
+        if hasattr(self.visual, 'ln_post'):
+            x = self.visual.ln_post(x)
+
+        if cls_token is not None:
+            patch_feat = x[:, 1:, :]
+        else:
+            patch_feat = x
+            
+        feat = patch_feat.permute(0, 2, 1).reshape(B, -1, hp, wp)
+        return feat
+    
+class CLIPBackbone(nn.Module):
+    def __init__(self, out_dim=256, target_size=(32, 16)):
+        super().__init__()
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        self.clip_model, _, _ = open_clip.create_model_and_transforms(
+            'ViT-B-32',
+            pretrained='openai'
+        )
+        self.clip_model = self.clip_model.to(self.device)
+        self.visual = self.clip_model.visual
+        
+        for p in self.visual.parameters():
+            p.requires_grad = False
+
+        self.wrapper = CLIPVisualWrapper(self.visual)
+        self.target_size = target_size
+
+
+        self.adapter = nn.Sequential(
+            nn.Conv2d(768, out_dim, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x):
+        x = self.wrapper(x)
+        x = F.interpolate(x, size=self.target_size, mode='bilinear', align_corners=True)
+        x = self.adapter(x)
+        return x
+
 
 class Stem(nn.Module):
     def __init__(self, in_dim, out_dim, kernel_size=1, stride=1, padding=0):
@@ -144,6 +325,7 @@ class UNet(nn.Module):
         x = self.up3(x, x2)
         x = self.up4(x, x1)
         feat = self.outc(x)
+        print(feat.shape)
         return feat
 
 
@@ -408,13 +590,17 @@ class DCEModel(nn.Module):
         super(DCEModel, self).__init__()
         if backbone == 'effunet':
             self.backbone = EffUNet()
-            print(sum(p.numel() for p in self.backbone.parameters()))
+        elif backbone == 'unet':
+            self.backbone = UNet()
+        elif backbone == 'dinov2':       
+            self.backbone = DINOv2Backbone()
+        elif backbone == 'clip':         
+            self.backbone = CLIPBackbone()
         else:
             self.backbone = DarkNet()
         self.DCEPredictor = DCEPredictor(dim_in=256, dce_chan=dce_chan)
-        print(sum(p.numel() for p in self.DCEPredictor.parameters()))
         self.loss = DenseCorrepondenceEmbeddingLoss(embedding_dim=dce_chan)
-        print(sum(p.numel() for p in self.loss.parameters()))
+
     def forward(self, img, dp_masks_gt=None, dp_x=None, dp_y=None, dp_I=None, dp_U=None, dp_V=None,
                 mode='loss'):
         #print(img.shape)
@@ -442,6 +628,21 @@ def dce_effunet64(pretrained=True, **kwargs):
     return model
 
 @register_model
+def dce_dinov2(pretrained=True, **kwargs):
+    model = DCEModel(dce_chan=64, backbone='dinov2')
+    return model
+
+@register_model
+def dce_clip64(pretrained=True, **kwargs):
+    model = DCEModel(dce_chan=64, backbone='clip')
+    return model
+
+@register_model
+def dce_unet64(pretrained=True, **kwargs):
+    model = DCEModel(dce_chan=64, backbone='unet')
+    return model
+
+@register_model
 def dce_darknet19(pretrain=True, backbone='darknet', **kwargs):
     model = DCEModel(dce_chan=4, backbone='darknet')
     return model
@@ -458,35 +659,4 @@ def dce_darknet19_binary2(pretrained=True, **kwargs):
     return model
 
 
-if __name__ == '__main__':
-    import torch
-    import torch.nn as nn
-    from thop import profile
-    import timm
 
-    net = timm.create_model('dce_effunet64').cuda()
-    net.eval() 
-
-    dummy_img = torch.randn(1, 3, 256, 128).cuda()
-
-    class WrappedDCEModel(nn.Module):
-        def __init__(self, model):
-            super().__init__()
-            self.model = model
-        
-        def forward(self, img):
-           
-            return self.model(img, mode='feat')
-
-    wrapped_net = WrappedDCEModel(net)
-
-    flops, params = profile(wrapped_net, inputs=(dummy_img,), verbose=False)
-
-    gflops = flops / 1e9  
-    mparams = params / 1e6  
-
-    print("=" * 50)
-    print(f"model size: {dummy_img.shape}")
-    print(f"total params: {mparams:.2f} M")
-    print(f"total computational cost: {gflops:.2f} GFLOPs")
-    print("=" * 50)
