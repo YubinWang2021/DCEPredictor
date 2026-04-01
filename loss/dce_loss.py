@@ -137,7 +137,7 @@ class DenseCorrepondenceEmbeddingLoss(nn.Module):
                 pca_vis = pca_vis.astype(np.uint8)
                 white_bg = np.ones((dce_pred[0].shape[1],dce_pred[0].shape[2],3), dtype=np.uint8) * 255
                 white_bg[mask_0.squeeze().cpu().numpy(), :] = pca_vis
-                cv2.imwrite(f'./test.png', white_bg)
+                cv2.imwrite(f'./infer.png', white_bg)
                 
                 img = dce_pred[0, 0:3].float()
                 img = ((img + 1) / 2.0 * 255).round()
